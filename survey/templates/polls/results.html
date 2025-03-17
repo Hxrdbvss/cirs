@@ -1,0 +1,28 @@
+{% load static %}
+<!DOCTYPE html>
+<html>
+<head>
+    <link rel="stylesheet" href="{% static 'polls/style.css' %}">
+    <title>{{ survey.title }} - Результаты</title>
+</head>
+<body>
+    <h1>{{ survey.title }} - Результаты</h1>
+    {% for question in survey.question_set.all %}
+        <h3>{{ question.text }}</h3>
+        {% if question.question_type == 'text' %}
+            <ul>
+            {% for response in question.textresponse_set.all %}
+                <li>{{ response.response }}</li>
+            {% endfor %}
+            </ul>
+        {% else %}
+            <ul>
+            {% for choice in question.choice_set.all %}
+                <li>{{ choice.text }}: {{ choice.votes }} голосов</li>
+            {% endfor %}
+            </ul>
+        {% endif %}
+    {% endfor %}
+    <a href="{% url 'detail' survey.id %}">Вернуться к голосованию</a>
+</body>
+</html>

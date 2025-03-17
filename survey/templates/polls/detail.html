@@ -1,0 +1,12 @@
+<h1>{{ survey.title }}</h1>
+{% for question in survey.question_set.all %}
+    <h3>{{ question.text }}</h3>
+    <form action="{% url 'vote' survey.id %}" method="post">
+        {% csrf_token %}
+        {% for choice in question.choice_set.all %}
+            <input type="radio" name="choice" value="{{ choice.id }}">
+            {{ choice.text }} (Голосов: {{ choice.votes }})<br>
+        {% endfor %}
+        <input type="submit" value="Голосовать">
+    </form>
+{% endfor %}

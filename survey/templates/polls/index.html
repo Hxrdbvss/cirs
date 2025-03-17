@@ -1,0 +1,6 @@
+<h1>Доступные опросы</h1>
+<ul>
+{% for survey in surveys %}
+    <li><a href="{% url 'detail' survey.id %}">{{ survey.title }}</a></li>
+{% endfor %}
+</ul>
