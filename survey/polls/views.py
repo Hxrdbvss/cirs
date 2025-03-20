@@ -19,13 +19,13 @@ def vote(request, survey_id):
                 response_text = request.POST.get(f'text_{question.id}')
                 if response_text:
                     TextResponse.objects.create(question=question, response=response_text)
-            else:  # radio или checkbox
+            else:
                 choice_ids = request.POST.getlist(f'choice_{question.id}')
                 for choice_id in choice_ids:
                     choice = Choice.objects.get(pk=choice_id)
                     choice.votes += 1
                     choice.save()
-        return HttpResponseRedirect(reverse('results', args=(survey.id,)))
+        return HttpResponseRedirect(reverse('polls:results', args=(survey.id,)))
     return render(request, 'polls/detail.html', {'survey': survey})
 
 def results(request, survey_id):

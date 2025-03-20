@@ -1,28 +1,24 @@
-{% load static %}
-<!DOCTYPE html>
-<html>
-<head>
-    <link rel="stylesheet" href="{% static 'polls/style.css' %}">
-    <title>{{ survey.title }} - Результаты</title>
-</head>
-<body>
-    <h1>{{ survey.title }} - Результаты</h1>
-    {% for question in survey.question_set.all %}
+{% extends 'base.html' %}
+{% block title %}{{ survey.title }} - Результаты{% endblock %}
+{% block content %}
+<h1 class="mb-4">{{ survey.title }} - Результаты</h1>
+{% for question in survey.question_set.all %}
+    <div class="mb-3">
         <h3>{{ question.text }}</h3>
         {% if question.question_type == 'text' %}
-            <ul>
+            <ul class="list-group">
             {% for response in question.textresponse_set.all %}
-                <li>{{ response.response }}</li>
+                <li class="list-group-item">{{ response.response }}</li>
             {% endfor %}
             </ul>
         {% else %}
-            <ul>
+            <ul class="list-group">
             {% for choice in question.choice_set.all %}
-                <li>{{ choice.text }}: {{ choice.votes }} голосов</li>
+                <li class="list-group-item">{{ choice.text }}: {{ choice.votes }} голосов</li>
             {% endfor %}
             </ul>
         {% endif %}
-    {% endfor %}
-    <a href="{% url 'detail' survey.id %}">Вернуться к голосованию</a>
-</body>
-</html>
+    </div>
+{% endfor %}
+<a href="{% url 'polls:detail' survey.id %}" class="btn btn-secondary">Вернуться к голосованию</a>
+{% endblock %}

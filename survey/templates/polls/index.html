@@ -1,6 +1,12 @@
-<h1>Доступные опросы</h1>
-<ul>
+{% extends 'base.html' %}
+{% block title %}Все опросы{% endblock %}
+{% block content %}
+<h1 class="mb-4">Доступные опросы</h1>
+<ul class="list-group">
 {% for survey in surveys %}
-    <li><a href="{% url 'detail' survey.id %}">{{ survey.title }}</a></li>
+    <li class="list-group-item">
+        <a href="{% url 'polls:detail' survey.id %}">{{ survey.title }}</a>
+    </li>
 {% endfor %}
 </ul>
+{% endblock %}
