@@ -2,88 +2,112 @@
 {% block title %}Создать опрос{% endblock %}
 {% block content %}
 <h1 class="mb-4">Создать новый опрос</h1>
+{% if error %}
+    <div class="alert alert-danger">{{ error }}</div>
+{% endif %}
 <form method="post" id="surveyForm">
     {% csrf_token %}
     <div class="mb-3">
-        {{ survey_form.as_p }}
+        <label for="surveyTitle">Название опроса:</label>
+        <input type="text" name="title" id="surveyTitle" class="form-control" required>
     </div>
 
     <h2>Вопросы</h2>
-    {{ question_formset.management_form }}
-    <div id="questions-container">
-        {% for question_form in question_formset %}
-            <div class="question-form mb-4 p-3 border rounded" data-prefix="{{ question_form.prefix }}">
-                {{ question_form.id }}
-                <div class="mb-3">{{ question_form.text }}</div>
-                <div class="mb-3">{{ question_form.question_type }}</div>
-                {% if question_form.question_type.value != 'text' %}
-                    <h4>Варианты ответа</h4>
-                    {% with choice_formset=choice_formsets|slice:forloop.counter0|first %}
-                        {{ choice_formset.management_form }}
-                        <div class="choices-container" data-prefix="{{ choice_formset.prefix }}">
-                            {% for choice_form in choice_formset %}
-                                <div class="choice-form mb-2">
-                                    {{ choice_form.id }}
-                                    {{ choice_form.text }}
-                                </div>
-                            {% endfor %}
-                        </div>
-                        <button type="button" class="btn btn-secondary add-choice mt-2" data-prefix="{{ choice_formset.prefix }}">Добавить вариант</button>
-                    {% endwith %}
-                {% endif %}
-                <div class="form-check mt-2">
-                    {{ question_form.DELETE }}
-                    <label class="form-check-label" for="{{ question_form.DELETE.id_for_label }}">Удалить вопрос</label>
-                </div>
-            </div>
-        {% endfor %}
-    </div>
-    <button type="button" class="btn btn-secondary mb-3" id="addQuestion">Добавить вопрос</button>
+    <div id="questions-container"></div>
+    <button type="button" class="btn btn-success mb-3" id="addQuestion">Добавить вопрос</button>
     <button type="submit" class="btn btn-primary">Сохранить опрос</button>
 </form>
 
 <script>
-const questionTemplate = `{{ question_formset.empty_form.as_p|escapejs }}`;
-const choiceTemplate = `<div class="choice-form mb-2"><input type="text" name="CHOICE_PREFIX-text" class="form-control" id="id_CHOICE_PREFIX-text"></div>`;
+// Шаблон для нового вопроса
+const questionTemplate = `
+    <div class="question-form mb-4 p-3 border rounded" data-question-index="QUESTION_INDEX">
+        <div class="mb-3">
+            <label>Текст вопроса:</label>
+            <input type="text" name="question-QUESTION_INDEX-text" class="form-control" required>
+        </div>
+        <div class="mb-3">
+            <label>Тип вопроса:</label>
+            <select name="question-QUESTION_INDEX-type" class="form-control question-type">
+                <option value="radio">Один выбор (radio)</option>
+                <option value="checkbox">Множественный выбор (checkbox)</option>
+                <option value="text">Текстовый ответ</option>
+            </select>
+        </div>
+        <div class="choices-section">
+            <h4>Варианты ответа</h4>
+            <div class="choices-container" id="choices-QUESTION_INDEX">
+                <div class="choice-form mb-3">
+                    <input type="text" name="choice-QUESTION_INDEX-0-text" class="form-control">
+                </div>
+            </div>
+            <button type="button" class="btn btn-secondary add-choice mt-2">Добавить вариант</button>
+        </div>
+        <button type="button" class="btn btn-danger remove-question mt-2">Удалить вопрос</button>
+    </div>`;
 
+// Шаблон для нового варианта ответа
+const choiceTemplate = `<div class="choice-form mb-3"><input type="text" name="choice-QUESTION_INDEX-CHOICE_INDEX-text" class="form-control"></div>`;
+
+// Счётчик вопросов
+let questionCounter = 0;
+
+// Добавление нового вопроса
 document.getElementById('addQuestion').addEventListener('click', function() {
     const container = document.getElementById('questions-container');
-    const totalForms = document.getElementById('id_questions-TOTAL_FORMS');
-    const newIndex = parseInt(totalForms.value);
-    
     const newQuestion = document.createElement('div');
-    newQuestion.className = 'question-form mb-4 p-3 border rounded';
-    newQuestion.innerHTML = questionTemplate.replace(/__prefix__/g, newIndex);
+    newQuestion.innerHTML = questionTemplate.replace(/QUESTION_INDEX/g, questionCounter);
     container.appendChild(newQuestion);
-    
-    totalForms.value = newIndex + 1;
+    questionCounter++;
+    attachListeners();
 });
 
-document.querySelectorAll('.add-choice').forEach(button => {
-    button.addEventListener('click', function() {
-        const prefix = this.getAttribute('data-prefix');
-        const container = document.querySelector(`.choices-container[data-prefix="${prefix}"]`);
-        const totalForms = document.querySelector(`#id_${prefix}-TOTAL_FORMS`);
-        const newIndex = parseInt(totalForms.value);
-        
-        const newChoice = document.createElement('div');
-        newChoice.innerHTML = choiceTemplate.replace(/CHOICE_PREFIX/g, `${prefix}-${newIndex}`);
-        container.appendChild(newChoice);
-        
-        totalForms.value = newIndex + 1;
+// Привязка слушателей
+function attachListeners() {
+    // Добавление вариантов
+    document.querySelectorAll('.add-choice').forEach(button => {
+        button.removeEventListener('click', addChoiceHandler);
+        button.addEventListener('click', addChoiceHandler);
     });
-});
 
-document.getElementById('id_questions-0-question_type').addEventListener('change', function() {
-    const container = document.querySelector('.choices-container');
-    const addButton = document.querySelector('.add-choice');
-    if (this.value === 'text') {
-        container.style.display = 'none';
-        addButton.style.display = 'none';
-    } else {
-        container.style.display = 'block';
-        addButton.style.display = 'block';
-    }
-});
+    // Удаление вопросов
+    document.querySelectorAll('.remove-question').forEach(button => {
+        button.removeEventListener('click', removeQuestionHandler);
+        button.addEventListener('click', removeQuestionHandler);
+    });
+
+    // Переключение видимости вариантов
+    document.querySelectorAll('.question-type').forEach(select => {
+        select.removeEventListener('change', typeChangeHandler);
+        select.addEventListener('change', typeChangeHandler);
+    });
+}
+
+function addChoiceHandler(event) {
+    const questionForm = event.target.closest('.question-form');
+    const questionIndex = questionForm.getAttribute('data-question-index');
+    const container = document.getElementById(`choices-${questionIndex}`);
+    const choiceIndex = container.querySelectorAll('.choice-form').length;
+    
+    const newChoice = document.createElement('div');
+    newChoice.innerHTML = choiceTemplate
+        .replace(/QUESTION_INDEX/g, questionIndex)
+        .replace(/CHOICE_INDEX/g, choiceIndex);
+    container.appendChild(newChoice);
+}
+
+function removeQuestionHandler(event) {
+    const questionForm = event.target.closest('.question-form');
+    questionForm.remove();
+}
+
+function typeChangeHandler(event) {
+    const questionForm = event.target.closest('.question-form');
+    const choicesSection = questionForm.querySelector('.choices-section');
+    choicesSection.style.display = event.target.value === 'text' ? 'none' : 'block';
+}
+
+// Инициализация
+attachListeners();
 </script>
 {% endblock %}
