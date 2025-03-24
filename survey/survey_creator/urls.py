@@ -5,5 +5,4 @@ app_name = 'survey_creator'  # Пространство имен для URL
 
 urlpatterns = [
     path('create/', views.create_survey, name='create_survey'),
-    path('<int:survey_id>/add_questions/', views.add_questions, name='add_questions'),
 ]

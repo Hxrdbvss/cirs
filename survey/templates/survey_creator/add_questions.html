@@ -2,16 +2,48 @@
 {% block title %}Добавить вопросы - {{ survey.title }}{% endblock %}
 {% block content %}
 <h1 class="mb-4">Добавить вопросы к "{{ survey.title }}"</h1>
-<form method="post" class="col-md-6">
+<form method="post" class="col-md-6" id="questionForm">
     {% csrf_token %}
     {{ question_form.as_p }}
+    <div id="choices-container">
+        {% if question_form.question_type.value != 'text' %}
+            <h3>Варианты ответа:</h3>
+            {% for choice_form in choice_forms %}
+                <div class="choice-field mb-2">
+                    {{ choice_form.as_p }}
+                </div>
+            {% endfor %}
+        {% endif %}
+    </div>
     {% if question_form.question_type.value != 'text' %}
-        <h3>Варианты ответа:</h3>
-        {% for choice_form in choice_forms %}
-            {{ choice_form.as_p }}
-        {% endfor %}
+        <button type="button" class="btn btn-secondary mt-2" id="addChoice">Добавить вариант</button>
     {% endif %}
-    <button type="submit" class="btn btn-primary">Добавить вопрос</button>
+    <button type="submit" class="btn btn-primary mt-3">Добавить вопрос</button>
 </form>
 <a href="{% url 'polls:index' %}" class="btn btn-secondary mt-2">Завершить создание</a>
+
+<script>
+document.getElementById('addChoice')?.addEventListener('click', function() {
+    const container = document.getElementById('choices-container');
+    const newField = document.createElement('div');
+    newField.className = 'choice-field mb-2';
+    const index = container.querySelectorAll('.choice-field').length;
+    newField.innerHTML = `
+        <p><label for="id_${index}-text">Вариант ответа:</label> <input type="text" name="${index}-text" id="id_${index}-text" class="form-control"></p>
+    `;
+    container.appendChild(newField);
+});
+
+document.getElementById('id_question_type').addEventListener('change', function() {
+    const container = document.getElementById('choices-container');
+    const addButton = document.getElementById('addChoice');
+    if (this.value === 'text') {
+        container.innerHTML = '';
+        addButton.style.display = 'none';
+    } else {
+        container.innerHTML = '<h3>Варианты ответа:</h3><div class="choice-field mb-2"><p><label for="id_0-text">Вариант ответа:</label> <input type="text" name="0-text" id="id_0-text" class="form-control"></p></div>';
+        addButton.style.display = 'block';
+    }
+});
+</script>
 {% endblock %}
